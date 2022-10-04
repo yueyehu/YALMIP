@@ -216,37 +216,43 @@ end
 [monomtable,variabletype] = yalmip('monomtable');
 F_vars = getvariables(F);
 do_not_convert = any(variabletype(F_vars)==4);
+% Handle case where optimizer adds a '+'
+selected_solver = options.solver;
+if ~isempty(selected_solver) && selected_solver(1) == '+'
+    selected_solver(1)=[];
+end
 %do_not_convert = do_not_convert | ~solverCapable(solvers,options.solver,'constraint.inequalities.secondordercone');
-do_not_convert = do_not_convert | strcmpi(options.solver,'bmibnb');
-do_not_convert = do_not_convert | strcmpi(options.solver,'scip');
-do_not_convert = do_not_convert | strcmpi(options.solver,'snopt');
-do_not_convert = do_not_convert | strcmpi(options.solver,'knitro');
-do_not_convert = do_not_convert | strcmpi(options.solver,'snopt-geometric'); 
-do_not_convert = do_not_convert | strcmpi(options.solver,'snopt-standard');
-do_not_convert = do_not_convert | strcmpi(options.solver,'ipopt');
-do_not_convert = do_not_convert | strcmpi(options.solver,'bonmin');
-do_not_convert = do_not_convert | strcmpi(options.solver,'nomad');
-do_not_convert = do_not_convert | strcmpi(options.solver,'ipopt-geometric');
-do_not_convert = do_not_convert | strcmpi(options.solver,'ipopt-standard');
-do_not_convert = do_not_convert | strcmpi(options.solver,'filtersd');
-do_not_convert = do_not_convert | strcmpi(options.solver,'filtersd-dense');
-do_not_convert = do_not_convert | strcmpi(options.solver,'filtersd-sparse');
-do_not_convert = do_not_convert | strcmpi(options.solver,'pennon');
-do_not_convert = do_not_convert | strcmpi(options.solver,'pennon-geometric');
-do_not_convert = do_not_convert | strcmpi(options.solver,'pennon-standard');
-do_not_convert = do_not_convert | strcmpi(options.solver,'pennlp');
-do_not_convert = do_not_convert | strcmpi(options.solver,'penbmi');
-do_not_convert = do_not_convert | strcmpi(options.solver,'fmincon');
-do_not_convert = do_not_convert | strcmpi(options.solver,'lindo');
-do_not_convert = do_not_convert | strcmpi(options.solver,'sqplab');
-do_not_convert = do_not_convert | strcmpi(options.solver,'fmincon-geometric');
-do_not_convert = do_not_convert | strcmpi(options.solver,'fmincon-standard');
-do_not_convert = do_not_convert | strcmpi(options.solver,'bmibnb');
-do_not_convert = do_not_convert | strcmpi(options.solver,'moment');
-do_not_convert = do_not_convert | strcmpi(options.solver,'sparsepop');
-do_not_convert = do_not_convert | strcmpi(options.solver,'baron');
-do_not_convert = do_not_convert | strcmpi(options.solver,'penlab');
-do_not_convert = do_not_convert | strcmpi(options.solver,'scip-nl');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'bmibnb');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'scip');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'snopt');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'knitro');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'knitro-standard');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'knitro-geometric');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'snopt-geometric'); 
+do_not_convert = do_not_convert | strcmpi(selected_solver,'snopt-standard');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'bonmin');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'nomad');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'ipopt');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'ipopt-standard');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'ipopt-geometric');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'filtersd');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'filtersd-dense');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'filtersd-sparse');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'pennon');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'pennon-geometric');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'pennon-standard');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'pennlp');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'penbmi');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'fmincon');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'fmincon-standard');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'fmincon-geometric');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'sqplab');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'bmibnb');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'moment');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'sparsepop');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'baron');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'penlab');
+do_not_convert = do_not_convert | strcmpi(selected_solver,'scip-nl');
 do_not_convert = do_not_convert | (options.convertconvexquad == 0);
 do_not_convert = do_not_convert | (options.relax == 1);
 if ~do_not_convert & any(variabletype(F_vars))
@@ -370,6 +376,7 @@ end
 
 if strfind(lower(solver.tag),'sparsecolo')
     temp_options = options;
+    temp_options.options.forceglobal = 0;
     temp_options.solver = options.sparsecolo.SDPsolver;
     tempProblemClass = ProblemClass;   
     localsolver = selectsolver(temp_options,tempProblemClass,solvers,socp_are_really_qc,allsolvers);
@@ -384,6 +391,7 @@ end
 
 if strfind(lower(solver.tag),'frlib')
     temp_options = options;
+    temp_options.forceglobal = 0;
     temp_options.solver = options.frlib.solver;
     tempProblemClass = ProblemClass;   
     localsolver = selectsolver(temp_options,tempProblemClass,solvers,socp_are_really_qc,allsolvers);
@@ -427,6 +435,7 @@ localsolver.qc = 0;
 localsolver = solver;
 if strcmpi(solver.tag,'kktqp')
     temp_options = options;
+    temp_options.forceglobal = 0;
     temp_options.solver = '';
     tempProblemClass = ProblemClass;
     tempProblemClass.constraint.binary = 1;
@@ -448,6 +457,7 @@ end
 % *************************************************************************
 if strcmpi(solver.tag,'lmirank')
     temp_options = options;
+    temp_options.forceglobal = 0;
     temp_options.solver = options.lmirank.solver;
     tempProblemClass = ProblemClass;
     tempProblemClass.constraint.inequalities.rank = 0;
@@ -468,6 +478,7 @@ end
 % *************************************************************************
 if strfind(solver.tag,'VSDP')
     temp_options = options;
+    temp_options.forceglobal = 0;
     temp_options.solver = options.vsdp.solver;
     tempProblemClass = ProblemClass;
     tempProblemClass.interval = 0;
@@ -641,7 +652,7 @@ if convertQuadraticObjective
         f = quad_info.f;
         F = F + lmi(cone([2*R*x;1-(t-f)],1+t-f));
         h = t+c'*x;
-        if options.usex0
+        if options.warmstart
             xx = value(x);
             ff = norm(quad_info.R*xx)^2+f;
             if ~isnan(ff)
@@ -955,7 +966,7 @@ if (K.f>0)
             % And we are done! Save the result
             % Note, no dual is saved
             yalmip('setSolution',solution);
-            p = checkset(F);
+            p = check(F);
             if any(p<1e-5)
                 diagnostic.info = yalmiperror(1,'YALMIP');
                 diagnostic.problem = 1;
@@ -998,7 +1009,7 @@ end
 %% Setup the initial solution
 % *************************************************************************
 x0 = [];
-if options.usex0
+if options.warmstart
     if solver.supportsinitial == 0
         error(['You have specified an initial point, but the selected solver (' solver.tag ') does not support warm-starts through YALMIP']);
     end
@@ -1051,29 +1062,18 @@ if ~isempty(oldc)
 end
 
 % Sanity check
-if ~isempty(c)
-    if any(isnan(c) )
-        error('You have NaNs in your objective!. Read more: https://yalmip.github.io/naninmodel/')
-    end
+if (~isempty(c) && any(isnan(c) )) || (~isempty(Q) && any(any(isnan(Q))))
+    disp('You have NaNs in objective (<a href="yalmip.github.io/naninmodel">learn to debug</a>)')
+    error('NaN in objective')
 end
-if ~isempty(Q)
-    if any(any(isnan(Q)))
-        error('You have NaNs in your quadratic objective!. Read more: https://yalmip.github.io/naninmodel/')
-    end
-end
-if ~isempty(lb)
-    if any(isnan(lb))
-        error('You have NaNs in a lower bound!. Read more: https://yalmip.github.io/naninmodel/')
-    end
-end
-if ~isempty(ub)
-    if any(isnan(ub))
-        error('You have NaNs in an upper bound!.Read more: https://yalmip.github.io/naninmodel/')
-    end
+if (~isempty(ub) && any(isnan(ub))) || (~isempty(lb) && any(isnan(lb)))
+    disp('You have NaNs in a bound (<a href="yalmip.github.io/naninmodel">learn to debug</a>)')
+    error('NaN in bounds')
 end
 if ~isempty(F_struc)
     if any(any(isnan(F_struc)))
-        error('You have NaNs in your constraints!. Read more: https://yalmip.github.io/naninmodel/')        
+        disp('You have NaNs in your constraints (<a href="yalmip.github.io/naninmodel">learn to debug</a>)')
+        error('NaN in model')
     end
 end
 
@@ -1131,6 +1131,7 @@ interfacedata.variabletype = variabletype;
 interfacedata.integer_variables   = integer_variables;
 interfacedata.binary_variables    = binary_variables;
 interfacedata.semicont_variables    = semicont_variables;
+interfacedata.implied_integer = [];
 interfacedata.semibounds = [];
 interfacedata.uncertain_variables = [];
 interfacedata.parametric_variables= parametric_variables;
@@ -1160,6 +1161,10 @@ else
 end
 interfacedata.ProblemClass = ProblemClass;
 interfacedata.dualized = is(F,'dualized');
+interfacedata.presolved = 0;
+if interfacedata.options.usex0==1
+    interfacedata.options.warmstart=1;
+end
 
 % *************************************************************************
 %% GENERAL DATA EXCANGE TO RECOVER SOLUTION AND UPDATE YALMIP VARIABLES

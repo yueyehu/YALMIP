@@ -1,15 +1,16 @@
-function [p,x_min,upper] = initializesolution(p);
+function [p,x_min,upper] = initializesolution(p,x_min,upper)
 
-x_min = zeros(length(p.c),1);
-upper = inf;
-if p.options.usex0
+if p.options.warmstart
     x = p.x0;
     z = evaluate_nonlinear(p,x);
     residual = constraint_residuals(p,z);
-    relaxed_feasible = all(residual(1:p.K.f)>=-p.options.bmibnb.eqtol) & all(residual(1+p.K.f:end)>=p.options.bmibnb.pdtol);
-    if relaxed_feasible
-        upper = p.f+p.c'*z+z'*p.Q*z;
-        x_min = z;
+    relaxed_feasible = all(residual(1:p.K.f)>=-p.options.bmibnb.eqtol) & all(residual(1+p.K.f:end)>=-p.options.bmibnb.pdtol);
+    if relaxed_feasible 
+        upper_ = p.f+p.c'*z+z'*p.Q*z;
+        if upper_ <= upper
+            upper = upper_;
+            x_min = z;
+        end
     end
 else
     x0 = p.x0;
@@ -22,25 +23,41 @@ else
             end
         end
     end
+    p = correctEXPConeClosureInitial(p);
     x = p.x0;
     z = evaluate_nonlinear(p,x);
     z = propagateAuxilliary(p,z);
     
     residual = constraint_residuals(p,z);
-    relaxed_feasible = all(residual(1:p.K.f)>=-p.options.bmibnb.eqtol) & all(residual(1+p.K.f:end)>=p.options.bmibnb.pdtol);
+    relaxed_feasible = all(residual(1:p.K.f)>=-p.options.bmibnb.eqtol) & all(residual(1+p.K.f:end)>=-p.options.bmibnb.pdtol);
+    if relaxed_feasible
+        for i = 1:length(p.evalMap)
+            if ~isempty(p.evalMap{i}.properties.forbidden)
+                if z(p.evalMap{i}.variableIndex) > p.evalMap{i}.properties.forbidden(1) && z(p.evalMap{i}.variableIndex) < p.evalMap{i}.properties.forbidden(2)
+                    relaxed_feasible = 0;
+                end
+            end
+        end
+    end
     if relaxed_feasible
         infs = isinf(z);
-        if isempty(infs)
-            upper = p.f+p.c'*z+z'*p.Q*z;
-            x_min = z;
-            x0 = x_min;
+        if ~any(infs)
+            upper_ = p.f+p.c'*z+z'*p.Q*z;
+            if upper_ <= upper
+                upper = upper_;
+                x_min = z;
+                x0 = x_min;
+            end
         else
             % Allow inf solutions if variables aren't used in objective
             if all(p.c(infs)==0) & nnz(p.Q(infs,:))==0
                 ztemp = z;ztemp(infs)=0;
-                upper = p.f+p.c'*ztemp+ztemp'*p.Q*ztemp;
-                x_min = z;
-                x0 = x_min;
+                upper_ = p.f+p.c'*ztemp+ztemp'*p.Q*ztemp;
+                if upper_ <= upper
+                    upper = upper_;
+                    x_min = z;
+                    x0 = x_min;
+                end
             end
         end
     end
@@ -54,13 +71,12 @@ else
     if ~isempty(p.binary_variables)
         p.x0(p.binary_variables) = round(p.x0(p.binary_variables));
     end
-    
+    p = correctEXPConeClosureInitial(p);
     x = p.x0;
     x(isinf(x))=eps;
     x(isnan(x))=eps;
     z = evaluate_nonlinear(p,x);
-    z = propagateAuxilliary(p,z);
-    
+    z = propagateAuxilliary(p,z);    
     residual = constraint_residuals(p,z);
     relaxed_feasible = all(residual(1:p.K.f)>=-p.options.bmibnb.eqtol) & all(residual(1+p.K.f:end)>=p.options.bmibnb.pdtol);
     if relaxed_feasible & ( p.f+p.c'*z+z'*p.Q*z < upper)

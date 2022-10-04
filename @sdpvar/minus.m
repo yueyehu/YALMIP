@@ -32,27 +32,18 @@ if ~Y_is_spdvar && ~strcmp(Y_class,'double')
     end
 end
 
-if X_is_spdvar
-    if X.typeflag == 40
-        y = X + uminus(Y);
-        return
-    end
-else
+if isnumeric(X)
     if any(isnan(X))
+        disp('You have NaNs in model (<a href="yalmip.github.io/naninmodel">learn to debug</a>)')
         error('Adding NaN to an SDPVAR makes no sense.');
     end
 end
-if Y_is_spdvar
-    if Y.typeflag == 40
-        y =X + uminus(Y);
-        return
-    end
-else
+if isnumeric(Y)
     if any(isnan(Y))
+        disp('You have NaNs in model (<a href="yalmip.github.io/naninmodel">learn to debug</a>)')
         error('Adding NaN to an SDPVAR makes no sense.');
     end
 end
-
 
 switch 2*X_is_spdvar+Y_is_spdvar
     case 1
@@ -291,24 +282,4 @@ switch 2*X_is_spdvar+Y_is_spdvar
         end
 
     otherwise
-end
-
-% Update info on KYP objects
-if X_is_spdvar && Y_is_spdvar 
-  if  X.typeflag==9  && Y.typeflag==9
-    error('Substraction of KYP objects currently not supported')
-  end
-end
-if Y_is_spdvar
-  if  Y.typeflag==9
-    y.extra.M = -Y.extra.M+X;
-    y.extra.negated = ~Y.extra.negated;
-    return
-  end 
-end
-if X_is_spdvar 
- if X.typeflag==9
-    y.extra.M = y.extra.M-Y;
-    return
- end
 end
